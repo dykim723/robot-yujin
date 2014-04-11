@@ -17,6 +17,7 @@ class AdapterSOAPServer:
     def __init__(self):
         self.address = "http://localhost:8008/"
         self.adapter_utility = AdapterUtility()
+        self.resource_alloc_flag = False
 
     def adapt(self, nodeID, resourceName, duration, options={}):
         '''
@@ -29,25 +30,25 @@ class AdapterSOAPServer:
         print("Adapt...")
         print("Node ID: %s, Resource Name: %s, Duration: %s, Options: %s" % (nodeID, resourceName, duration, options))
 
-        resource_alloc_flag = False
         command_flag = False
 
         print "ready to request resources"
+        print "resource_alloc_flag: ", self.resource_alloc_flag
 
         # To publish request to allocate resource
-        if resourceName:
-            print "===================server.py==================="
+        if resourceName != None and self.resource_alloc_flag != True:
+            print "===================server - Resource Allocating ==================="
             time.sleep(1)
             self.adapter_utility.pub_resource_alloc(resourceName, options)
 
-            while resource_alloc_flag !=True:
+            while self.resource_alloc_flag !=True:
                 time.sleep(0.5)
-                resource_alloc_flag = self.adapter_utility.resource_alloc_flag
+                self.resource_alloc_flag = self.adapter_utility.resource_alloc_flag
             print "Receive reply of the allocation request"
 
         # To publish command to resource
-        else :
-            print "===================server.py==================="
+        elif duration != None :
+            print "===================server - Commanding ==================="
             time.sleep(1)
             self.adapter_utility.pub_command(duration, options)
 
