@@ -3,7 +3,7 @@
           package="kr.co.smartylab.CafeRemoteOrderApp"
           android:versionCode="1"
           android:versionName="1.0">
-    <uses-sdk android:minSdkVersion="19"/>
+    <uses-sdk android:minSdkVersion="13"/>
 
     <uses-library android:name="com.google.android.maps"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>

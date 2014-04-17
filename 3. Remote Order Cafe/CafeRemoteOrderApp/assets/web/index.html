@@ -186,212 +186,235 @@
 <!--<script src="./lib/roslibjs-devel/build/roslib.js"></script>-->
 
 <script type="text/javascript">
-    /*
-     * Google Maps documentation: http://code.google.com/apis/maps/documentation/javascript/basics.html
-     * Geolocation documentation: http://dev.w3.org/geo/api/spec-source.html
-     */
-    $(document).on("pageinit", "#page", function () {
-        // ROS
-        var ros = new ROSLIB.Ros();
+/*
+ * Google Maps documentation: http://code.google.com/apis/maps/documentation/javascript/basics.html
+ * Geolocation documentation: http://dev.w3.org/geo/api/spec-source.html
+ */
+$(document).on("pageinit", "#page", function () {
+    var ros = new ROSLIB.Ros();
+    var orderUID; // uid of order
 
-        // Order info
-        var uid;
-
-        $("#btn-order").click(calcRoute);
-        $(".btn-minus").click(function () {
-            numIn = $(this).parent().find("input.in-small");
-            num = Number(numIn.attr("value"));
-            if (num > 0) {
-                numIn.attr("value", num - 1);
-            }
-        });
-        $(".btn-plus").click(function () {
-            numIn = $(this).parent().find("input.in-small");
-            num = Number(numIn.attr("value"));
-            numIn.attr("value", num + 1);
-        });
-
-        // Location of Soongsil Univ.: 37.496375,126.956879
-        var lastLocation = new google.maps.LatLng(37.496375, 126.956879); // Soongsil Univ.
-        var directionsDisplay = new google.maps.DirectionsRenderer();
-        var directionsService = new google.maps.DirectionsService();
-
-        if (navigator.geolocation) {
-            function success(pos) {
-                // Location found, show map with these coordinates
-                lastLocation = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
-                drawMap(lastLocation);
-            }
-
-            function fail(error) {
-                drawMap(lastLocation);  // Failed to find location, show default map
-            }
-
-            // Find the users current position.  Cache the location for 5 minutes, timeout after 6 seconds
-            navigator.geolocation.getCurrentPosition(success, fail, {maximumAge: 500000, enableHighAccuracy: true, timeout: 6000});
-        } else {
-            drawMap(defaultLatLng);  // No geolocation support, show default map
-        }
-
-        function packOrderMenu() {
-            var order = [];
-            $("input.in-small").each(function() {
-               // alert($(this).attr("value"));
-                order.push({name:$(this).attr("name"), size:2, qty:parseInt($(this).attr("value"))});
-            });
-            return order;
-        }
-
-        function order(expectedArrivalTime) {
-            // Pack menus
-            orderInfo = packOrderMenu();
-//            alert(JSON.stringify(orderInfo));
-
-            // Display expected arrival time
-            ms = moment(expectedArrivalTime).diff(moment(new Date()));
-            remainedTime = Math.round(moment.duration(ms).asMinutes());
-            $("#arrival-time").attr("value", moment(expectedArrivalTime).format("YYYY-MM-DD HH:mm A"));
-            $("#remained-time").attr("value", remainedTime+" minutes");
-
-            // ROS topics and messages
-            var orderTopic = new ROSLIB.Topic({
-                ros : ros,
-                name : '/cafe/remote_order',
-                messageType : 'cafe_msgs/RemoteOrder'
-            });
-
-            var orderMsg = new ROSLIB.Message({
-                name: ""+guid(),
-                time: moment(new Date()).format("MMDDHHmm"),
-                estimated_arrival: parseInt(remainedTime),
-                menus: orderInfo,
-                status: 0
-            });
-
-            // Create a connection to the rosbridge WebSocket server.
-            serverAddr = $("input#server-addr").val();
-            if(serverAddr == undefined || serverAddr == "") {
-                ros.connect('ws://localhost:9090');
-            } else {
-                ros.connect('ws://'+serverAddr);
-            }
-            orderTopic.publish(orderMsg);
-
-
-            var orderStatusTopic = new ROSLIB.Topic({
-                ros : ros,
-                name : '/cafe/remote_order_status',
-                messageType : 'cafe_msgs/RemoteOrderStatus'
-            });
-
-            orderStatusTopic.subscribe(function(message) {
-                alert(message.data);
-//                listener.unsubscribe();
-            });
-
-            // Start updating order
-            orderUpdatingTimer = setInterval(startUpdating, 60000);
-        }
-
-        var orderUpdatingTimer;
-        function startUpdating() {
-            calcRoute(true);
-        }
-
-        function updateOrder(expectedArrivalTime) {
-            ms = moment(expectedArrivalTime).diff(moment(new Date()));
-            remainedTime = Math.round(moment.duration(ms).asMinutes());
-
-            // ROS topics and messages
-            var orderUpdateTopic = new ROSLIB.Topic({
-                ros : ros,
-                name : '/cafe/remote_order_update',
-                messageType : 'cafe_msgs/RemoteOrderUpdate'
-            });
-
-            var orderUpdateMsg = new ROSLIB.Message({
-                name: ""+guid(),
-                estimated_arrival: parseInt(remainedTime),
-                status: 0
-            });
-        }
-
-        function stopOrderUpdating() { // to be called when you want to stop the timer
-            clearInterval(tid);
-        }
-
-        function guid() {
-            function s4() {
-                return Math.floor((1 + Math.random()) * 0x10000)
-                        .toString(16)
-                        .substring(1);
-            }
-            return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-                    s4() + '-' + s4() + s4() + s4();
-        }
-
-        function calcRoute(isUpdating) {
-            // Location of the cafe: 37.476025,126.882318
-            var end = new google.maps.LatLng(37.476025, 126.882318);
-
-            var request = {
-                origin: lastLocation,
-                destination: end,
-                provideRouteAlternatives: false,
-                travelMode: google.maps.TravelMode.TRANSIT
-            };
-
-            directionsService.route(request, function (response, status) {
-//                alert(status);
-                if (status == google.maps.DirectionsStatus.OK) {
-                    directionsDisplay.setDirections(response);
-                    // alert(JSON.stringify(response));
-                    // Time Zone: response.routes[0].legs[0].arrival_time.time_zone
-                    // Value: response.routes[0].legs[0].arrival_time.value
-
-                    arrivalTime = new Date(response.routes[0].legs[0].arrival_time.value);
-                    if(isUpdating == undefined || isUpdating == false) {
-                        order(arrivalTime);
-                    } else {
-                        updateOrder(arrivalTime);
-                        if(arrivalTime < 5) {
-                            stopOrderUpdating();
-                        }
-                    }
-                }
-            });
-
-        }
-
-        function drawMap(latlng, isForRoute) {
-            var myOptions = {
-                zoom: 10,
-                center: latlng,
-                mapTypeId: google.maps.MapTypeId.ROADMAP
-            };
-            var map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
-            directionsDisplay.setMap(map);
-
-            if (isForRoute == undefined || !isForRoute) {
-                // Add an overlay to the map of current lat/lng
-                var marker = new google.maps.Marker({
-                    position: latlng,
-                    map: map,
-                    title: "Greetings!"
-                });
-            }
-        }
-
-        function sendTo(serverAddr, data) {
-
-        }
-
-        function pad(num, size) {
-            var s = num+"";
-            while (s.length < size) s = "0" + s;
-            return s;
+    // ------------------------------------------------
+    // Event handlers
+    // ------------------------------------------------
+    $("#btn-order").click(function() {
+        calcRoute(false);
+    });
+    $(".btn-minus").click(function () {
+        numIn = $(this).parent().find("input.in-small");
+        num = Number(numIn.attr("value"));
+        if (num > 0) {
+            numIn.attr("value", num - 1);
         }
     });
+    $(".btn-plus").click(function () {
+        numIn = $(this).parent().find("input.in-small");
+        num = Number(numIn.attr("value"));
+        numIn.attr("value", num + 1);
+    });
+
+    // ------------------------------------------------
+    // Navigation
+    // ------------------------------------------------
+    // Location of Soongsil Univ.: 37.496375,126.956879
+    var lastLocation = new google.maps.LatLng(37.496375, 126.956879); // Soongsil Univ.
+    var directionsDisplay = new google.maps.DirectionsRenderer();
+    var directionsService = new google.maps.DirectionsService();
+
+    if (navigator.geolocation) {
+        function success(pos) {
+            // Location found, show map with these coordinates
+            lastLocation = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+            drawMap(lastLocation);
+        }
+
+        function fail(error) {
+            drawMap(lastLocation);  // Failed to find location, show default map
+        }
+
+        // Find the users current position.  Cache the location for 5 minutes, timeout after 6 seconds
+        navigator.geolocation.getCurrentPosition(success, fail, {maximumAge: 500000, enableHighAccuracy: true, timeout: 6000});
+    } else {
+        drawMap(defaultLatLng);  // No geolocation support, show default map
+    }
+
+    // ------------------------------------------------
+    // Functions
+    // ------------------------------------------------
+    function calcRoute(isUpdating) {
+        var orderInfo;
+        if(!isUpdating) {
+            orderInfo = packOrderMenu();
+            if(orderInfo == undefined || orderInfo == null) {
+                alert("No order item exists.");
+                return;
+            }
+        }
+
+        // Location of the cafe: 37.476025,126.882318
+        var end = new google.maps.LatLng(37.476025, 126.882318);
+
+        var request = {
+            origin: lastLocation,
+            destination: end,
+            provideRouteAlternatives: false,
+            travelMode: google.maps.TravelMode.TRANSIT
+        };
+
+        directionsService.route(request, function (response, status) {
+//                alert(status);
+            if (status == google.maps.DirectionsStatus.OK) {
+                directionsDisplay.setDirections(response);
+                // alert(JSON.stringify(response));
+                // Time Zone: response.routes[0].legs[0].arrival_time.time_zone
+                // Value: response.routes[0].legs[0].arrival_time.value
+
+                arrivalTime = new Date(response.routes[0].legs[0].arrival_time.value);
+                if(isUpdating == undefined || isUpdating == false) {
+                    // Pack menus
+                    order(orderInfo, arrivalTime);
+                } else {
+                    updateOrder(arrivalTime);
+                    if(arrivalTime < 5) {
+                        stopOrderUpdating();
+                    }
+                }
+            }
+        });
+
+    }
+
+    function packOrderMenu() {
+        var order = [];
+        var total = 0;
+        $("input.in-small").each(function() {
+            // alert($(this).attr("value"));
+            qty = parseInt($(this).attr("value"));
+            total += qty;
+            order.push({name:$(this).attr("name"), size:2, qty:qty});
+        });
+        if(total > 0) {
+            return order;
+        } else {
+            return;
+        }
+    }
+
+    function order(menuItems, expectedArrivalTime) {
+
+        // Display expected arrival time
+        ms = moment(expectedArrivalTime).diff(moment(new Date()));
+        remainedTime = Math.round(moment.duration(ms).asMinutes());
+        $("#arrival-time").attr("value", moment(expectedArrivalTime).format("YYYY-MM-DD HH:mm A"));
+        $("#remained-time").attr("value", remainedTime+" minutes");
+
+        // ROS topics and messages
+        var orderTopic = new ROSLIB.Topic({
+            ros : ros,
+            name : '/cafe/remote_order',
+            messageType : 'cafe_msgs/RemoteOrder'
+        });
+
+        orderUID = guid();
+        var orderMsg = new ROSLIB.Message({
+            name: orderUID,
+            time: moment(new Date()).format("MMDDHHmm"),
+            estimated_arrival: parseInt(remainedTime),
+            menus: menuItems,
+            status: 0
+        });
+
+        // Create a connection to the rosbridge WebSocket server.
+        serverAddr = $("input#server-addr").val();
+        if(serverAddr == undefined || serverAddr == "") {
+            ros.connect('ws://localhost:9090');
+        } else {
+            ros.connect('ws://'+serverAddr);
+        }
+        orderTopic.publish(orderMsg);
+
+
+        var orderStatusTopic = new ROSLIB.Topic({
+            ros : ros,
+            name : '/cafe/remote_order_status',
+            messageType : 'cafe_msgs/RemoteOrderStatus'
+        });
+
+//            orderStatusTopic.subscribe(function(message) {
+////                alert(message.data);
+////                listener.unsubscribe();
+//            });
+
+        // Start updating order
+        stopOrderUpdating();
+        orderUpdatingTimer = setInterval(startUpdating, 60000);
+    }
+
+    var orderUpdatingTimer;
+    function startUpdating() {
+        calcRoute(true);
+    }
+
+    function updateOrder(expectedArrivalTime) {
+        ms = moment(expectedArrivalTime).diff(moment(new Date()));
+        remainedTime = Math.round(moment.duration(ms).asMinutes());
+
+        // ROS topics and messages
+        var orderUpdateTopic = new ROSLIB.Topic({
+            ros : ros,
+            name : '/cafe/remote_order_update',
+            messageType : 'cafe_msgs/RemoteOrderUpdate'
+        });
+
+        var orderUpdateMsg = new ROSLIB.Message({
+            name: orderUID,
+            estimated_arrival: parseInt(remainedTime),
+            status: 0
+        });
+
+        orderUpdateTopic.publish(orderUpdateMsg);
+    }
+
+    function stopOrderUpdating() { // to be called when you want to stop the timer
+        clearInterval(orderUpdatingTimer);
+    }
+
+    function guid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                    .toString(16)
+                    .substring(1);
+        }
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+                s4() + '-' + s4() + s4() + s4();
+    }
+
+    function drawMap(latlng, isForRoute) {
+        var myOptions = {
+            zoom: 10,
+            center: latlng,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        };
+        var map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
+        directionsDisplay.setMap(map);
+
+        if (isForRoute == undefined || !isForRoute) {
+            // Add an overlay to the map of current lat/lng
+            var marker = new google.maps.Marker({
+                position: latlng,
+                map: map,
+                title: "Greetings!"
+            });
+        }
+    }
+
+    function pad(num, size) {
+        var s = num+"";
+        while (s.length < size) s = "0" + s;
+        return s;
+    }
+});
 </script>
+
 </body>
 </html>
