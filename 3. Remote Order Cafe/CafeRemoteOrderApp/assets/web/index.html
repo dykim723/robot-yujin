@@ -275,9 +275,6 @@ $(document).on("pageinit", "#page", function () {
                     order(orderInfo, arrivalTime);
                 } else {
                     updateOrder(arrivalTime);
-                    if(arrivalTime < 5) {
-                        stopOrderUpdating();
-                    }
                 }
             }
         });
@@ -359,6 +356,10 @@ $(document).on("pageinit", "#page", function () {
         ms = moment(expectedArrivalTime).diff(moment(new Date()));
         remainedTime = Math.round(moment.duration(ms).asMinutes());
 
+        if(remainedTime < 5) {
+            stopOrderUpdating();
+        }
+        
         // ROS topics and messages
         var orderUpdateTopic = new ROSLIB.Topic({
             ros : ros,
