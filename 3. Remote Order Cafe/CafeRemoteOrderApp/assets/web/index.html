@@ -150,7 +150,7 @@
                     if(routePointIdx < routePoints.length-1) {
                         setTimeout(function() {
                             calcRoute(routePoints[++routePointIdx], destination, true);
-                        }, 5000);
+                        }, 7000);
                     } else {
                         // Finish simulation
                         finishSimulation();
@@ -162,7 +162,7 @@
                     setTimeout(function() {
                         $("#lb-status").html(statusLbs[1]);
                         calcRoute(routePoints[routePointIdx], destination, true);
-                    }, 5000);
+                    }, 3000);
                 }
             });
         }
