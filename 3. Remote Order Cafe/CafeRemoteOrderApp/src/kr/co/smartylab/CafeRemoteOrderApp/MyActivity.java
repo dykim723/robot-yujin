@@ -5,6 +5,7 @@ import android.content.res.AssetManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
@@ -49,9 +50,17 @@ public class MyActivity extends Activity {
 
     }
 
+    class LifecycleHelper {
+        @JavascriptInterface
+        public void finishApp() {
+            finish();
+        }
+    }
+
     private Location lastLocation;
     private WebView webView;
     private LocationProvider locationProvider;
+    private LifecycleHelper lifecycleHelper;
 
     /**
      * Called when the activity is first created.
@@ -64,10 +73,12 @@ public class MyActivity extends Activity {
         // Init attrs
         webView = (WebView) findViewById(R.id.webView);
         locationProvider = new LocationProvider(webView);
+        lifecycleHelper = new LifecycleHelper();
 
         // Prepare web view
         webView.getSettings().setJavaScriptEnabled(true);
         webView.addJavascriptInterface(locationProvider, "LocationProvider");
+        webView.addJavascriptInterface(lifecycleHelper, "LifecycleHelper");
 
         AssetManager assetManager = getAssets();
         String htmlPage = null;
@@ -99,4 +110,12 @@ public class MyActivity extends Activity {
         //lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationProvider);
     }
 
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if(keyCode == KeyEvent.KEYCODE_BACK) {
+            webView.loadUrl("javascript:listenBackButtonPressed()");
+            return false;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
 }

@@ -31,6 +31,13 @@
      * Geolocation documentation: http://dev.w3.org/geo/api/spec-source.html
      */
 
+    function listenBackButtonPressed() {
+        var r = confirm("Are you sure you want to quit?");
+        if(r == true) {
+            LifecycleHelper.finishApp();
+        }
+    }
+
     $(document).on("pageinit", "#page", function () {
         $.mobile.buttonMarkup.hoverDelay = 500;
 
@@ -43,13 +50,13 @@
 
         var inProgress = false;
 
-        var statusLbs = ["IDLE", "In Progress", "OVER_QUERY_LIMIT"]
+        var statusLbs = ["IDLE", "In Progress", "OVER_QUERY_LIMIT", "FAILED"]
         $("#lb-status").html(statusLbs[0]);
 
         // ------------------------------------------------
         // Event handlers
         // ------------------------------------------------
-        $("#btn-order").on("touchend", function() {
+        $("#btn-order").on("touchstart", function() {
             orderInfo = packOrderMenu();
             if(inProgress == true) {
                 alert("Already in progress.");
@@ -65,14 +72,22 @@
             $("#lb-status").html(statusLbs[1]);
             calcRoute(routePoints[0], destination, false);
         });
-        $(".btn-minus").on("touchend", function () {
+        $(".btn-minus").on("touchstart", function () {
+            if(inProgress == true) {
+                alert("Already in progress.");
+                return;
+            }
             numIn = $(this).parent().find("label.lb-quantity");
             num = Number(numIn.html());
             if (num > 0) {
                 numIn.html(num - 1);
             }
         });
-        $(".btn-plus").on("touchend", function () {
+        $(".btn-plus").on("touchstart", function () {
+            if(inProgress == true) {
+                alert("Already in progress.");
+                return;
+            }
             numIn = $(this).parent().find("label.lb-quantity");
             num = Number(numIn.html());
             numIn.html(num + 1);
@@ -156,13 +171,16 @@
                         finishSimulation();
                     }
 
-                } else if(google.maps.DirectionsStatus.OVER_QUERY_LIMIT) {
+                } else if(status == google.maps.DirectionsStatus.OVER_QUERY_LIMIT) {
 //                alert("Over queried. Please wait a minute.");
-                    $("#lb-status").html(statusLbs[2]);
+//                    $("#lb-status").html(statusLbs[2]);
                     setTimeout(function() {
                         $("#lb-status").html(statusLbs[1]);
                         calcRoute(routePoints[routePointIdx], destination, true);
                     }, 3000);
+                } else if(status == google.maps.DirectionsStatus.UNKNOWN_ERR) {
+                    $("#lb-status").html(statusLbs[3]);
+                    finishSimulation();
                 }
             });
         }
@@ -346,7 +364,6 @@
 
 </head>
 <body>
-
 <div data-role="page" id="page" data-url="page">
     <div data-role="header" data-theme="b">
         <h1>Cafe Remote Order App</h1>
