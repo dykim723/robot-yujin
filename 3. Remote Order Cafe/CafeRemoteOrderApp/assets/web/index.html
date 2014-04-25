@@ -79,7 +79,7 @@ $(function() {
     // ------------------------------------------------
     // Event handlers
     // ------------------------------------------------
-    $("#btn-order").on("touchstart", function() {
+    $("#btn-order").on("touchstart", function(e) {
         orderInfo = packOrderMenu();
 
         if(inProgress == true) {
@@ -97,8 +97,11 @@ $(function() {
         inProgress = true;
         $("#lb-status").html(statusLbs[1]);
         calcRoute(routePoints[0], destination, false);
+
+        e.stopPropagation();
+        e.preventDefault();
     });
-    $(".btn-minus").on("touchstart", function () {
+    $(".btn-minus").on("touchstart", function (e) {
         if(inProgress == true) {
             dialogInprogress.dialog("open");
             return;
@@ -108,8 +111,11 @@ $(function() {
         if (num > 0) {
             numIn.html(num - 1);
         }
+
+        e.stopPropagation();
+        e.preventDefault();
     });
-    $(".btn-plus").on("touchstart", function () {
+    $(".btn-plus").on("touchstart", function (e) {
         if(inProgress == true) {
             dialogInprogress.dialog("open");
             return;
@@ -117,6 +123,9 @@ $(function() {
         numIn = $(this).parent().find("label.lb-quantity");
         num = Number(numIn.html());
         numIn.html(num + 1);
+
+        e.stopPropagation();
+        e.preventDefault();
     });
 
     // ------------------------------------------------
