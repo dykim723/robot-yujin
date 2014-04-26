@@ -9,12 +9,14 @@
 
 <script src="file:///android_asset/web/lib/jquery-ui-1.10.4.custom/js/jquery-1.10.2.js"></script>
 <script src="file:///android_asset/web/lib/jquery-ui-1.10.4.custom/js/jquery-ui-1.10.4.custom.min.js"></script>
+<script src="file:///android_asset/web/lib/jquery.blockUI.js"></script>
 <script src="file:///android_asset/web/lib/moment-with-langs.min.js"></script>
 <script src="file:///android_asset/web/lib/roslibjs-devel/include/EventEmitter2/eventemitter2.js"></script>
 <script src="file:///android_asset/web/lib/roslibjs-devel/build/roslib.js"></script>
 <link rel="stylesheet" href="file:///android_asset/web/lib/jquery-ui-1.10.4.custom/css/ui-lightness/jquery-ui-1.10.4.custom.min.css">
 <!--<script src="./lib/jquery-ui-1.10.4.custom/js/jquery-1.10.2.js"></script>-->
 <!--<script src="./lib/jquery-ui-1.10.4.custom/js/jquery-ui-1.10.4.custom.min.js"></script>-->
+<!--<script src="./lib/jquery.blockUI.js"></script>-->
 <!--<script src="./lib/moment-with-langs.min.js"></script>-->
 <!--<script src="./lib/roslibjs-devel/include/EventEmitter2/eventemitter2.js"></script>-->
 <!--<script src="./lib/roslibjs-devel/build/roslib.js"></script>-->
@@ -28,32 +30,64 @@
 
 $(function() {
 
+    $.blockUI({ css: {
+        border: 'none',
+        padding: '15px',
+        backgroundColor: '#000',
+        '-webkit-border-radius': '10px',
+        '-moz-border-radius': '10px',
+        opacity: .5,
+        color: '#fff',
+        'font-size': '80%'
+    } });
+
     // Init dialogs
     var dialogInprogress = $("#dialog-inprogress");
     dialogInprogress.dialog({
         autoOpen: false,
-        height: 140,
-        modal: true
+        closeOnEscape: false,
+        height: 200,
+        modal: true,
+        buttons: {
+            "OK": function(e) {
+                $( this ).dialog( "close" );
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
     });
     var dialogNoitem = $("#dialog-noitem");
     dialogNoitem.dialog({
         autoOpen: false,
-        height: 140,
-        modal: true
+        closeOnEscape: false,
+        height: 200,
+        modal: true,
+        buttons: {
+            "OK": function(e) {
+                $( this ).dialog( "close" );
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
     });
     var dialogExit = $("#dialog-exit");
     dialogExit.dialog({
         autoOpen: false,
+        closeOnEscape: false,
         resizable: false,
         height: 200,
         modal: true,
         buttons: {
-            "OK": function() {
+            "OK": function(e) {
                 $( this ).dialog( "close" );
                 LifecycleHelper.finishApp();
+                e.stopPropagation();
+                e.preventDefault();
             },
-            Cancel: function() {
+            Cancel: function(e) {
                 $( this ).dialog( "close" );
+                e.stopPropagation();
+                e.preventDefault();
             }
         }
     });
@@ -73,7 +107,7 @@ $(function() {
 
     var inProgress = false;
 
-    var statusLbs = ["IDLE", "In Progress", "OVER_QUERY_LIMIT", "FAILED"]
+    var statusLbs = ["Ready", "In Progress", "Completed", "OVER_QUERY_LIMIT", "FAILED"]
     $("#lb-status").html(statusLbs[0]);
 
     // ------------------------------------------------
@@ -214,7 +248,7 @@ $(function() {
                     calcRoute(routePoints[routePointIdx], destination, true);
                 }, 3000);
             } else if(status == google.maps.DirectionsStatus.UNKNOWN_ERR) {
-                $("#lb-status").html(statusLbs[3]);
+                $("#lb-status").html(statusLbs[4]);
                 finishSimulation();
             }
         });
@@ -222,7 +256,7 @@ $(function() {
 
     function finishSimulation() {
         inProgress = false;
-        $("#lb-status").html(statusLbs[0]);
+        $("#lb-status").html(statusLbs[2]);
         resetMenu();
     }
 
@@ -332,6 +366,10 @@ $(function() {
             mapTypeId: google.maps.MapTypeId.ROADMAP
         };
         var map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
+        google.maps.event.addListenerOnce(map, 'idle', function(){
+            //loaded fully
+            setTimeout($.unblockUI, 500);
+        });
         directionsDisplay.setMap(map);
 
         currentMarker = new google.maps.Marker({
@@ -358,7 +396,11 @@ $(function() {
     }
 
     .ui-widget {
-        font-size: 80%;
+        font-size: 90%;
+    }
+
+    .ui-dialog-titlebar-close {
+        display: none;
     }
 
     #map-canvas {
