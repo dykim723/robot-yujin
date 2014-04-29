@@ -3,16 +3,19 @@
 <head>
 <title>Cafe Solution</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="cache-control" content="no-cache" />
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD73mlF5amwPZAF3SR1kzP7Jpvre6_wxdI&sensor=false"></script>
 <!--<script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>-->
 
+<script src="file:///android_asset/web/lib/offlinejs/offline.min.js"></script>
 <script src="file:///android_asset/web/lib/jquery-ui-1.10.4.custom/js/jquery-1.10.2.js"></script>
 <script src="file:///android_asset/web/lib/jquery-ui-1.10.4.custom/js/jquery-ui-1.10.4.custom.min.js"></script>
 <script src="file:///android_asset/web/lib/jquery.blockUI.js"></script>
 <script src="file:///android_asset/web/lib/moment-with-langs.min.js"></script>
 <script src="file:///android_asset/web/lib/roslibjs-devel/include/EventEmitter2/eventemitter2.js"></script>
 <script src="file:///android_asset/web/lib/roslibjs-devel/build/roslib.js"></script>
+<link rel="stylesheet" href="file:///android_asset/web/lib/offlinejs/offline-theme-default.css">
 <link rel="stylesheet" href="file:///android_asset/web/lib/jquery-ui-1.10.4.custom/css/ui-lightness/jquery-ui-1.10.4.custom.min.css">
 <!--<script src="./lib/jquery-ui-1.10.4.custom/js/jquery-1.10.2.js"></script>-->
 <!--<script src="./lib/jquery-ui-1.10.4.custom/js/jquery-ui-1.10.4.custom.min.js"></script>-->
@@ -29,7 +32,6 @@
  */
 
 $(function() {
-
     $.blockUI({ css: {
         border: 'none',
         padding: '15px',
@@ -40,6 +42,7 @@ $(function() {
         color: '#fff',
         'font-size': '80%'
     } });
+    setTimeout($.unblockUI, 5000);
 
     // Init dialogs
     var dialogInprogress = $("#dialog-inprogress");
