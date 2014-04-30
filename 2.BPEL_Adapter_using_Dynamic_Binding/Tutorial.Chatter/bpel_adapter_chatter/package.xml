@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>bpel_adapter</name>
+  <name>bpel_adapter_chatter</name>
   <version>0.0.0</version>
-  <description>The bpel_adapter package</description>
+  <description>The bpel_adapter_chatter package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/bpel_adapter</url> -->
+  <!-- <url type="website">http://wiki.ros.org/bpel_adapter_chatter</url> -->
 
 
   <!-- Author tags are optional, mutiple are allowed, one per tag -->
@@ -41,16 +41,13 @@
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>message_generation</build_depend>
-
-  <run_depend>turtlebot_teleop</run_depend>
   <run_depend>message_runtime</run_depend>
+
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- You can specify that this package is a metapackage here: -->
     <!-- <metapackage/> -->
-    <!--    <rocon_service> services/teleop/teleop.service </rocon_service> -->
-        <concert_service> services/adapter/adapter.service </concert_service>
-
+        <concert_service>services/adapter/adapter.service</concert_service>
     <!-- Other tools can request additional information be placed here -->
 
   </export>
