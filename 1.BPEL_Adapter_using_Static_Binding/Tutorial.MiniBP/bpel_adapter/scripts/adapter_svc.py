@@ -26,7 +26,7 @@ import datetime
 import rospy
 import rocon_python_comms
 import concert_service_utilities
-import rocon_scheduler_requests
+import concert_scheduler_requests
 import unique_id
 import std_msgs.msg as std_msgs
 import rocon_std_msgs.msg as rocon_std_msgs
@@ -47,6 +47,7 @@ class AdapterSvc:
     __slots__ = [
         'service_name',
         'service_description',
+        'service_priority',
         'service_id',
         'scheduler_resources_subscriber',
         'list_available_teleops_server',
@@ -64,7 +65,7 @@ class AdapterSvc:
         ####################
         # Discovery
         ####################
-        (self.service_name, self.service_description, self.service_id) = concert_service_utilities.get_service_info()
+        (self.service_name, self.service_description, self.service_priority, self.service_id) = concert_service_utilities.get_service_info()
         try:
             known_resources_topic_name = rocon_python_comms.find_topic('scheduler_msgs/KnownResources', timeout=rospy.rostime.Duration(5.0), unique=True)
         except rocon_python_comms.NotFoundException as e:
@@ -86,7 +87,7 @@ class AdapterSvc:
         self.bpel_command_subscriber = rospy.Subscriber('command_request', adapter_msgs.Adapter, self.command_request_callback)
 
         self.allocation_timeout = rospy.get_param('allocation_timeout', 15.0)  # seconds
-        
+
     def setup_requester(self, uuid):
         try:
             scheduler_requests_topic_name = concert_service_utilities.find_scheduler_requests_topic()
@@ -94,8 +95,8 @@ class AdapterSvc:
         except rocon_python_comms.NotFoundException as e:
             rospy.logerr("AdapterSVC : %s" % (str(e)))
             return  # raise an exception here?
-        frequency = rocon_scheduler_requests.common.HEARTBEAT_HZ
-        return rocon_scheduler_requests.Requester(self.requester_feedback, uuid, 0, scheduler_requests_topic_name, frequency)
+        frequency = concert_scheduler_requests.common.HEARTBEAT_HZ
+        return concert_scheduler_requests.Requester(self.requester_feedback, uuid, 0, scheduler_requests_topic_name, frequency)
 
     def resources_alloc_request_callback(self, msg):
         '''
@@ -128,13 +129,13 @@ class AdapterSvc:
                 result = True
                 break
             rospy.rostime.wallsleep(0.1)
-        
+
         if result == False:
             rospy.logwarn("AdapterSvc : couldn't capture required resource [timed out][%s]" % msg.resource.uri)
             self.requester.rset[resource_request_id].cancel()
         else:
             rospy.loginfo("AdapterSvc : captured resouce [%s][%s]" % (msg.resource.uri, self.allocated_requests[msg.resource.uri]))
-      
+
     def command_request_callback(self, msg):
         '''
           Called by Subscriber when the command arrived from the server
@@ -154,7 +155,7 @@ class AdapterSvc:
         rospy.loginfo("command_request_callback : ready to send cmd_vel to turtlebot")
         rospy.loginfo("command_request_callback : command = %s", command)
         print "=================================================="
-        twist = Twist();        
+        twist = Twist();
 
         if command == 'forward':
             print 'in forward'
@@ -165,12 +166,12 @@ class AdapterSvc:
             print 'in backward'
             twist.linear.x = -0.1; twist.linear.y = 0; twist.linear.z = 0
             twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0
-       
+
         elif command == 'cycle_left':
             print 'left'
             twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
             twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 1
-       
+
         elif command == 'cycle_right':
             print 'right'
             twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
@@ -192,7 +193,7 @@ class AdapterSvc:
             publisher.publish(twist)
             r.sleep()
 
-        print "=================================================="        
+        print "=================================================="
         command_reply_publisher = rospy.Publisher('/services/adapter/command_reply', std_msgs.String)
         time.sleep(1)
         command_reply_publisher.publish("command_success")
