@@ -34,18 +34,27 @@ class AdapterSOAPServer():
         self.adapter_utility = AdapterUtility()
         self.resource_alloc_flag = False
 
-    def adapt(self, nodeID, resourceName, duration, options={}):
+    #def adapt(self, nodeID, resourceName, duration, options={}):
+    def adapt(self, nodeID, resourceName, duration, actions, name, node_id, node_uri, node_min, node_max, options={}):
         print resourceName
-        resource = {'nodeID': nodeID, 'resourceName': resourceName, 'duration': duration, 'options': options}
+        resource = {'nodeID': nodeID, 'resourceName': resourceName, 'duration': duration, 'actions': actions, 'name': name, 'node_id': node_id, 'node_uri': node_uri, 'node_min': node_min, 'node_max': node_max, 'options': options}
+        print '=============================================================='
+        print resource
+        print '=============================================================='
+
         self.adapter_utility.allocate(resource)
 
         return "Result"
 
     def run(self):
+
         dispatcher = SoapDispatcher('op_adapter_soap_disp', location = self.address, action = self.address,
                 namespace = "http://smartylab.co.kr/products/op/adapter", prefix="tns", trace = True, ns = True)
+        #dispatcher.register_function('adapt', self.adapt, returns={'out': str},
+        #        args={'nodeID': str, 'resourceName': str, 'duration': str, 'options': str})
         dispatcher.register_function('adapt', self.adapt, returns={'out': str},
-                args={'nodeID': str, 'resourceName': str, 'duration': str, 'options': str})
+                args={'nodeID': str, 'resourceName': str, 'duration': str, 'actions': {'id': str, 'type': str}, 'options': str, 'name': str, 'node_id': str, 'node_uri': str, 'node_min': int, 'node_max': int})
+
         print("Starting a SOAP server for adapter layer of OP...")
         httpd = HTTPServer(("", int(PORT_NUMBER)), SOAPHandler)
         httpd.dispatcher = dispatcher
