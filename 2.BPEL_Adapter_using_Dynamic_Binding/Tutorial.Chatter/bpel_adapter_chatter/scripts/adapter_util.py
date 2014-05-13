@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import roslib
-roslib.load_manifest('turtlebot_teleop')
+#roslib.load_manifest('turtlebot_teleop')
 import rospy
 import time
 
